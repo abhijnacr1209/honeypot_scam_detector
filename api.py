@@ -5,6 +5,10 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from honeypot_core import get_honeypot_reply  # Correctly imports your fixed logic
 from dotenv import load_dotenv
+from flask import Flask, render_template, request, jsonify
+app= Flask(__name__)
+
+
 
 load_dotenv()
 app = FastAPI()
@@ -28,3 +32,16 @@ async def chat(request: Request):
     # NEW: Calls the Client-based logic from honeypot_core.py
     reply = get_honeypot_reply(user_input, history)
     return {"reply": reply}
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/chat", methoods=["POST"])
+def chat():
+    user_input = request.json.get("message")
+    reply = get_honeypot_reply(user_input)
+    return jsonify({"reply":reply})
+
+if __name__ == "__main__":
+    app.run()
