@@ -6,9 +6,7 @@ from fastapi.responses import HTMLResponse
 from honeypot_core import get_honeypot_reply  # Correctly imports your fixed logic
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
-app= Flask(__name__)
-
-
+app = Flask(__name__)
 
 load_dotenv()
 app = FastAPI()
