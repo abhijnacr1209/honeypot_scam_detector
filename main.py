@@ -1,7 +1,7 @@
 import os
 import json
 from dotenv import load_dotenv
-from honeypot_core.py import HoneypotChat
+from honeypot_core import HoneypotChat
 
 # Load environment variables
 load_dotenv()
