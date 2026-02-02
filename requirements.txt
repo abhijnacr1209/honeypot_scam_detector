@@ -48,8 +48,8 @@ typing_extensions==4.15.0
 uritemplate==4.2.0
 urllib3==2.6.3
 uvicorn==0.40.0
-flask
-gunicorn
+flask==3.0.0
+gunicorn==21.2.0
 jinja2
 requests
 aiofiles
