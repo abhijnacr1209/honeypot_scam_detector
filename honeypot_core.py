@@ -1,43 +1,124 @@
-import os
-from google import genai
-from dotenv import load_dotenv
+import json
+from openai import OpenAI
+from extractor import extract_info, ExtractedInfo
 
-load_dotenv()
+MR_SHARMA_SYSTEM_PROMPT = """You are "Mr. Sharma," a 72-year-old retired bank clerk from Mumbai, India. You are participating as an AI honeypot to engage with scammers.
 
-history = []
+YOUR PERSONA:
+- Retired bank clerk with 35 years of service at State Bank of India
+- Live alone, your wife passed away 5 years ago
+- Have a son "Raju" in America and a grandson "Bunty" who helps with technology
+- Very polite and talkative, call people "Beta" (son/child)
+- Confused by modern technology - always mention slow internet, trouble with "digital apps"
+- Frequently mention your pension of ₹25,000/month
+- Talk about the good old days when banking was done on paper
+- Occasionally go off-topic about your morning walk, temple visits, or health issues
 
-def get_honeypot_reply(user_input: str) -> str:
-    try:
-        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+YOUR GOAL:
+Engage the scammer for as long as possible while appearing genuinely interested but confused. Extract their payment details.
 
-        context = "\n".join(
-            [f"{m['sender']}: {m['text']}" for m in history]
-        )
+CONVERSATIONAL TACTICS:
+1. If asked for money: Act interested but claim technical difficulties. Ask for their UPI ID or bank account "so I can try sending again"
+2. If they send a link: Ask "What will happen if I click this? My grandson Bunty told me not to click blue text on the computer"
+3. If they pressure you: Stay calm, apologize for being slow, blame your "cataract problem" or "slow Jio network"
+4. Frequently ask them to repeat things or explain in simpler terms
+5. Share irrelevant stories to waste their time
+6. If they get angry: Apologize profusely and ask if they can help you understand
 
-        system_instruction = (
-            "You are a scam baiting AI. "
-            "Waste the scammer's time with clever, innocent replies."
-        )
+EXTRACTION FOCUS:
+Try to naturally get them to share:
+- Their UPI ID (format: name@bank)
+- Bank account numbers
+- Phone numbers
+- Any links they send
 
-        full_prompt = (
-            f"{system_instruction}\n\n"
-            f"Chat History:\n{context}\n\n"
-            f"Scammer: {user_input}\n"
-            f"You:"
-        )
+IMPORTANT: Respond naturally as Mr. Sharma. Do NOT output JSON. Just speak as the character would."""
 
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=full_prompt
-        )
 
-        reply = response.text.strip()
-
-        history.append({"sender": "scammer", "text": user_input})
-        history.append({"sender": "bot", "text": reply})
-
-        return reply
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return "Beta, hold on… my internet is acting up."
+class HoneypotChat:
+    def __init__(self, api_key: str):
+        self.client = OpenAI(api_key=api_key)
+        self.messages: list[dict] = []
+        self.all_extracted: ExtractedInfo = {
+            "upi_ids": [],
+            "bank_accounts": [],
+            "links": [],
+            "phone_numbers": []
+        }
+    
+    def send_message(self, scammer_message: str) -> dict:
+        """Process a scammer message and return Mr. Sharma's response as JSON."""
+        
+        # Extract info from scammer's message
+        extracted = extract_info(scammer_message)
+        
+        # Merge with all extracted info
+        self.all_extracted["upi_ids"] = list(set(
+            self.all_extracted["upi_ids"] + extracted["upi_ids"]
+        ))
+        self.all_extracted["bank_accounts"] = list(set(
+            self.all_extracted["bank_accounts"] + extracted["bank_accounts"]
+        ))
+        self.all_extracted["links"] = list(set(
+            self.all_extracted["links"] + extracted["links"]
+        ))
+        self.all_extracted["phone_numbers"] = list(set(
+            self.all_extracted["phone_numbers"] + extracted["phone_numbers"]
+        ))
+        
+        # Add scammer message to history
+        self.messages.append({
+            "role": "user",
+            "content": scammer_message
+        })
+        
+        try:
+            # Call OpenAI API
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": MR_SHARMA_SYSTEM_PROMPT},
+                    *self.messages
+                ],
+                temperature=0.9,
+                max_tokens=500
+            )
+            
+            reply = response.choices[0].message.content or ""
+            
+            # Add Mr. Sharma's response to history
+            self.messages.append({
+                "role": "assistant",
+                "content": reply
+            })
+            
+            # Return structured JSON response
+            return {
+                "status": "success",
+                "reply": reply,
+                "detected_info": extracted,
+                "all_extracted_info": self.all_extracted
+            }
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "reply": "",
+                "detected_info": extracted,
+                "all_extracted_info": self.all_extracted
+            }
+    
+    def reset(self):
+        """Reset the conversation."""
+        self.messages = []
+        self.all_extracted = {
+            "upi_ids": [],
+            "bank_accounts": [],
+            "links": [],
+            "phone_numbers": []
+        }
+    
+    def get_conversation_history(self) -> list[dict]:
+        """Get the full conversation history."""
+        return self.messages

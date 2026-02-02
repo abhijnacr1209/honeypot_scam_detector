@@ -1,19 +1,36 @@
 import re
+import json
+from typing import TypedDict
 
-def extract_all_intelligence(text):
-    # [span_3](start_span)These fields are required by the evaluation platform[span_3](end_span)
-    intel = {
-        "bankAccounts": re.findall(r'\b\d{9,18}\b', text), # 9-18 digit numbers
-        "upiIds": re.findall(r'[a-zA-Z0-9.\-_]+@[a-zA-Z]{2,}', text), # Standard UPI pattern
-        "phishingLinks": re.findall(r'https?://\S+', text), # Any URL
-        "phoneNumbers": re.findall(r'\+?\d{10,12}', text), # Phone patterns
-        "suspiciousKeywords": []
-    }
+class ExtractedInfo(TypedDict):
+    upi_ids: list[str]
+    bank_accounts: list[str]
+    links: list[str]
+    phone_numbers: list[str]
+
+def extract_info(message: str) -> ExtractedInfo:
+    """Extract UPI IDs, bank accounts, links, and phone numbers from a message."""
     
-    # [span_4](start_span)Check for mandatory keywords[span_4](end_span)
-    keywords = ["urgent", "verify", "blocked", "refund", "suspend", "kyc"]
-    for word in keywords:
-        if word in text.lower():
-            intel["suspiciousKeywords"].append(word)
-            
-    return intel
+    # UPI ID pattern (e.g., name@okaxis, user@paytm)
+    upi_pattern = r'[a-zA-Z0-9._-]+@[a-zA-Z]{2,}'
+    
+    # Bank account pattern (9-18 digit numbers)
+    bank_account_pattern = r'\b\d{9,18}\b'
+    
+    # URL pattern
+    url_pattern = r'https?://[^\s]+|www\.[^\s]+'
+    
+    # Indian phone number pattern
+    phone_pattern = r'(?:\+91[\-\s]?)?[6-9]\d{9}'
+    
+    upi_ids = list(set(re.findall(upi_pattern, message, re.IGNORECASE)))
+    bank_accounts = list(set(re.findall(bank_account_pattern, message)))
+    links = list(set(re.findall(url_pattern, message, re.IGNORECASE)))
+    phone_numbers = list(set(re.findall(phone_pattern, message)))
+    
+    return {
+        "upi_ids": upi_ids,
+        "bank_accounts": bank_accounts,
+        "links": links,
+        "phone_numbers": phone_numbers
+    }
