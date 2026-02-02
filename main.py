@@ -31,7 +31,7 @@ def main():
     while True:
         try:
             # Get scammer input
-            scammer_input = input("📞 Scammer: ").strip()
+            scammer_input = input(" Scammer: ").strip()
             
             if not scammer_input:
                 continue
@@ -58,7 +58,7 @@ def main():
             
             # Print JSON response
             print()
-            print("📋 JSON Response:")
+            print(" JSON Response:")
             print(json.dumps(response, indent=2, ensure_ascii=False))
             print()
             print(f"👴 Mr. Sharma: {response.get('reply', '')}")
