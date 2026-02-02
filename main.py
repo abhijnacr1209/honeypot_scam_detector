@@ -6,19 +6,20 @@ from honeypot_core import HoneypotChat
 # Load environment variables
 load_dotenv()
 
+
 def main():
     api_key = os.getenv("OPENAI_API_KEY")
-    
+
     if not api_key:
         print(json.dumps({
             "status": "error",
             "error": "OPENAI_API_KEY not found in .env file"
         }, indent=2))
         return
-    
+
     # Initialize the honeypot
     honeypot = HoneypotChat(api_key)
-    
+
     print("=" * 60)
     print("🍯 MR. SHARMA AI HONEYPOT 🍯")
     print("=" * 60)
@@ -27,15 +28,22 @@ def main():
     print("All responses are in JSON format.")
     print("=" * 60)
     print()
-    
+
     while True:
         try:
-            # Get scammer input
-            scammer_input = input(" Scammer: ").strip()
-            
+            # Get scammer input safely
+            try:
+                scammer_input = input(" Scammer: ").strip()
+            except EOFError:
+                print(json.dumps({
+                    "status": "error",
+                    "error": "No stdin available. Run in interactive mode."
+                }, indent=2))
+                break
+
             if not scammer_input:
                 continue
-            
+
             if scammer_input.lower() == "quit":
                 print(json.dumps({
                     "status": "session_ended",
@@ -43,7 +51,7 @@ def main():
                     "total_extracted": honeypot.all_extracted
                 }, indent=2))
                 break
-            
+
             if scammer_input.lower() == "reset":
                 honeypot.reset()
                 print(json.dumps({
@@ -52,10 +60,10 @@ def main():
                 }, indent=2))
                 print()
                 continue
-            
+
             # Get Mr. Sharma's response
             response = honeypot.send_message(scammer_input)
-            
+
             # Print JSON response
             print()
             print(" JSON Response:")
@@ -63,7 +71,7 @@ def main():
             print()
             print(f"👴 Mr. Sharma: {response.get('reply', '')}")
             print()
-            
+
         except KeyboardInterrupt:
             print("\n")
             print(json.dumps({
@@ -71,6 +79,7 @@ def main():
                 "total_extracted": honeypot.all_extracted
             }, indent=2))
             break
+
         except Exception as e:
             print(json.dumps({
                 "status": "error",
