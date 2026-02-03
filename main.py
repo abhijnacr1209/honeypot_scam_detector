@@ -3,8 +3,10 @@ import json
 from dotenv import load_dotenv
 from honeypot_core import HoneypotChat
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 app = FastAPI()
-@app.get("/")
+app.mount("/", StaticFiles(directory="frontend", html=True),name="frontend")
+@app.get("/api/status")
 def root():
     return {"status":"ok"}
 
