@@ -1,98 +1,20 @@
 import os
-import json
-from dotenv import load_dotenv
-from honeypot_core import HoneypotChat
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+from ai_engine import get_sharma_reply
+
 app = FastAPI()
-app.mount("/", StaticFiles(directory="frontend", html=True),name="frontend")
-@app.get("/api/status")
-def root():
-    return {"status":"ok"}
 
-# Load environment variables
-load_dotenv()
+# Serve frontend
+app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
+# API endpoint used by frontend
+@app.post("/api/chat")
+async def chat(request: Request):
+    data = await request.json()
+    scammer_message = data.get("message")
 
-def main():
-    api_key = os.getenv("OPENAI_API_KEY")
+    reply = get_sharma_reply(scammer_message)
 
-    if not api_key:
-        print(json.dumps({
-            "status": "error",
-            "error": "OPENAI_API_KEY not found in .env file"
-        }, indent=2))
-        return
-
-    # Initialize the honeypot
-    honeypot = HoneypotChat(api_key)
-
-    print("=" * 60)
-    print("🍯 MR. SHARMA AI HONEYPOT 🍯")
-    print("=" * 60)
-    print("Type scam messages to test the honeypot.")
-    print("Commands: 'quit' to exit, 'reset' to start new conversation")
-    print("All responses are in JSON format.")
-    print("=" * 60)
-    print()
-
-    while True:
-        try:
-            # Get scammer input safely
-            try:
-                scammer_input = input(" Scammer: ").strip()
-            except EOFError:
-                print(json.dumps({
-                    "status": "error",
-                    "error": "No stdin available. Run in interactive mode."
-                }, indent=2))
-                break
-
-            if not scammer_input:
-                continue
-
-            if scammer_input.lower() == "quit":
-                print(json.dumps({
-                    "status": "session_ended",
-                    "message": "Honeypot session ended",
-                    "total_extracted": honeypot.all_extracted
-                }, indent=2))
-                break
-
-            if scammer_input.lower() == "reset":
-                honeypot.reset()
-                print(json.dumps({
-                    "status": "reset",
-                    "message": "Conversation reset successfully"
-                }, indent=2))
-                print()
-                continue
-
-            # Get Mr. Sharma's response
-            response = honeypot.send_message(scammer_input)
-
-            # Print JSON response
-            print()
-            print(" JSON Response:")
-            print(json.dumps(response, indent=2, ensure_ascii=False))
-            print()
-            print(f"👴 Mr. Sharma: {response.get('reply', '')}")
-            print()
-
-        except KeyboardInterrupt:
-            print("\n")
-            print(json.dumps({
-                "status": "interrupted",
-                "total_extracted": honeypot.all_extracted
-            }, indent=2))
-            break
-
-        except Exception as e:
-            print(json.dumps({
-                "status": "error",
-                "error": str(e)
-            }, indent=2))
-
-
-if __name__ == "__main__":
-    main()
+    return JSONResponse({"reply": reply})
