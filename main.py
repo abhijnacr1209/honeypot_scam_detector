@@ -2,6 +2,11 @@ import os
 import json
 from dotenv import load_dotenv
 from honeypot_core import HoneypotChat
+from fastapi import FastAPI
+app = FastAPI()
+@app.get("/")
+def root():
+    return {"status":"ok"}
 
 # Load environment variables
 load_dotenv()
