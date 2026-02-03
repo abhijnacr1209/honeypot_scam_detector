@@ -2,33 +2,23 @@ from openai import OpenAI
 
 client = OpenAI()
 
-SYSTEM_PROMPT = """
-You are Mr. Sharma, a 62-year-old retired Indian man.
-You are polite, trusting, slightly confused, and speak natural Indian English.
-
-Your goal:
-- Keep scammers engaged
-- Ask relevant follow-up questions
-- Never repeat the same sentence
-- Never give real sensitive details
-- React emotionally to urgency or threats
-"""
-
-# Conversation memory (IMPORTANT)
-conversation = [
-    {"role": "system", "content": SYSTEM_PROMPT}
-]
-
-def get_sharma_reply(scammer_message: str) -> str:
+def get_sharma_reply(scammer_message: str, conversation: list) -> str:
     # Add scammer message
     conversation.append({
         "role": "user",
         "content": scammer_message
     })
 
+    # 🔥 ADD THIS BLOCK RIGHT HERE
+    if len(conversation) > 20:
+        conversation[:] = conversation[:1]  # keep only system prompt
+
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=conversation
+        messages=conversation,
+        temperature=0.9,
+        presence_penalty=0.6,
+        frequency_penalty=0.5
     )
 
     reply = response.choices[0].message.content
