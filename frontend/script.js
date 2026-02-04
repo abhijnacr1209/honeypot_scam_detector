@@ -10,7 +10,7 @@ if (!sessionId) {
 
 function addMessage(text, className) {
     const div = document.createElement("div");
-    div.className = `msg ${className}`;
+    div.className = `message ${className}`;
     div.innerText = text;
     chatBox.appendChild(div);
     chatBox.scrollTop = chatBox.scrollHeight;
@@ -20,6 +20,7 @@ async function sendMessage() {
     const message = input.value.trim();
     if (!message) return;
 
+    // Show scammer message
     addMessage(message, "scammer");
     input.value = "";
 
@@ -36,7 +37,6 @@ async function sendMessage() {
         if (!res.ok) throw new Error("Backend error");
 
         const data = await res.json();
-        console.log("Backend reply data:", data); // DEBUG
 
         if (data.reply && data.reply.trim() !== "") {
             addMessage(data.reply, "sharma");
@@ -49,3 +49,8 @@ async function sendMessage() {
         console.error(err);
     }
 }
+
+// Press Enter to send
+input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendMessage();
+});

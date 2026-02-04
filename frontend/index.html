@@ -1,68 +1,25 @@
-<script>
-    function handleKey(e) {
-        if (e.key === "Enter") sendMessage();
-    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MR SHARMA | Secure Chat</title>
+    <!-- Link to your external CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-    // Create / reuse session id
-    let sessionId = localStorage.getItem("session_id");
-    if (!sessionId) {
-        sessionId = crypto.randomUUID();
-        localStorage.setItem("session_id", sessionId);
-    }
+<div class="chat-container">
+    <div class="chat-header">MR SHARMA | Secure Chat</div>
+    <div class="chat-box" id="messages"></div>
+    <div class="chat-input">
+        <input type="text" id="user-input" placeholder="Type a message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
 
-    async function sendMessage() {
-        const input = document.getElementById('user-input');
-        const msgDiv = document.getElementById('messages');
-        const alertBox = document.getElementById('extraction-alert');
-        const text = input.value.trim();
+<!-- Link to your external JS -->
+<script src="script.js" defer></script>
 
-        if (!text) return;
-
-        // Show scammer message
-        msgDiv.innerHTML += `<div class="msg scammer">${text}</div>`;
-        input.value = '';
-        msgDiv.scrollTop = msgDiv.scrollHeight;
-
-        try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    message: text,
-                    session_id: sessionId
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error("Backend error");
-            }
-
-            const data = await response.json();
-
-            // Always use backend reply
-            msgDiv.innerHTML += `<div class="msg sharma">${data.reply}</div>`;
-
-            // Optional extraction alert (only if backend sends it)
-            if (data.detected_info &&
-                (data.detected_info.upi_ids?.length ||
-                 data.detected_info.links?.length)) {
-
-                alertBox.style.display = 'block';
-                alertBox.innerText =
-                    "🚨 Detected: " +
-                    (data.detected_info.upi_ids?.[0] ||
-                     data.detected_info.links?.[0]);
-
-                setTimeout(() => alertBox.style.display = 'none', 5000);
-            }
-
-        } catch (err) {
-            // On error, show explicit error (NO fake replies)
-            msgDiv.innerHTML +=
-                `<div class="msg sharma">[Connection error. Backend not responding]</div>`;
-            console.error(err);
-        }
-
-        msgDiv.scrollTop = msgDiv.scrollHeight;
-    }
-</script>
+</body>
+</html>
