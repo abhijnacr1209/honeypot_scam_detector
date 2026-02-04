@@ -2,8 +2,15 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from ai_engine import get_sharma_reply, SYSTEM_PROMPT
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
+app.mount ("/", StaticFiles(directory="frontend", html=True), name="frontend")
+
+@app.get("/")
+def root():
+    return {"message": "Honeypot scam detector is running"}
+    
 
 # Allow frontend (if hosted elsewhere)
 app.add_middleware(
