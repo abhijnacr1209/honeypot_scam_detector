@@ -23,17 +23,33 @@ async function sendMessage() {
     addMessage(message, "scammer");
     input.value = "";
 
-    const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            message: message,
-            session_id: sessionId
-        })
-    });
+    try {
+        const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                message: message,
+                session_id: sessionId
+            })
+        });
 
-    const data = await res.json();
-    addMessage(data.reply || "No response", "sharma");
+        if (!res.ok) {
+            throw new Error(`Server error: ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        // Only backend reply — no fallback text
+        addMessage(data.reply, "sharma");
+
+    } catch (err) {
+        // Explicit error instead of fake Sharma reply
+        addMessage(
+            "[Error: backend not responding]",
+            "sharma"
+        );
+        console.error(err);
+    }
 }
 
 input.addEventListener("keydown", e => {
