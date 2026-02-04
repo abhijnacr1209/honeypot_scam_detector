@@ -3,6 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from ai_engine import get_sharma_reply, SYSTEM_PROMPT
+from extractor import extract_scammer_info
 
 
 app = FastAPI()
@@ -35,28 +36,55 @@ async def chat(request: Request):
 
     return {"reply": reply}
 
+
 @app.post("/api/report")
 async def generate_report(request: Request):
     data = await request.json()
     session_id = data.get("session_id")
 
     if not session_id or session_id not in conversations:
-        return JSONResponse(
-            {"report": "No conversation found for this session."}
-        )
+        return JSONResponse({
+            "report": "No conversation found for this session."
+        })
 
     convo = conversations[session_id]
 
+    full_text = ""
     report_lines = []
+
     for msg in convo:
-        if msg["role"] == "user":
+        if msg["role"] == "scammer":
             report_lines.append(f"Scammer: {msg['content']}")
+            full_text += msg["content"] + " "
         elif msg["role"] == "assistant":
             report_lines.append(f"Mr. Sharma: {msg['content']}")
 
-    report_text = "\n\n".join(report_lines)
+    extracted = extract_scammer_info(full_text)
 
-    return {"report": report_text}
+    report = f"""
+CYBER FRAUD INCIDENT REPORT
+
+Conversation Summary:
+---------------------
+{chr(10).join(report_lines)}
+
+Extracted Scam Indicators:
+--------------------------
+UPI IDs: {', '.join(extracted['upi_ids']) or 'None found'}
+Phone Numbers: {', '.join(extracted['phone_numbers']) or 'None found'}
+Bank Accounts: {', '.join(extracted['bank_accounts']) or 'None found'}
+Links: {', '.join(extracted['links']) or 'None found'}
+
+Remarks:
+--------
+The above indicators suggest a potential financial fraud attempt.
+This report can be submitted to the Cyber Crime Portal (cybercrime.gov.in).
+"""
+
+    return {
+        "report": report.strip()
+    }
+
 
 
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

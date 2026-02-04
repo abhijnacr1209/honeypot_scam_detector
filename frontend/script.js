@@ -76,20 +76,19 @@ async function generateReport() {
 
     modal.style.display = "block";
     overlay.style.display = "block";
-    content.innerText = "Generating report... Please wait.";
+    content.innerText = "Analyzing conversation and extracting scam details...";
 
     try {
-        // Send session_id, NOT chatHistory
         const res = await fetch("/api/report", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                session_id: sessionId   // <-- important
+                session_id: sessionId   // 🔥 THIS FIXES IT
             })
         });
 
         const data = await res.json();
-        content.innerText = data.report || "No report available.";
+        content.innerHTML = data.report.replace(/\n/g, "<br>");
 
     } catch (err) {
         content.innerText = "Error generating report.";
