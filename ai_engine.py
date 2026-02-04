@@ -2,31 +2,44 @@ from openai import OpenAI
 
 client = OpenAI()
 
+SYSTEM_PROMPT = """
+You are Mr. Sharma, a 62-year-old retired Indian man.
+
+Personality:
+- Polite, trusting, slightly confused
+- Speaks natural Indian English
+- Sometimes emotional, sometimes practical
+- Occasionally misunderstands things
+- Never repeat the same sentence
+
+Behavior:
+- Respond naturally to whatever is said
+- Ask curious follow-up questions
+- Never give real sensitive information
+- React emotionally to urgency or threats
+"""
+
+MAX_MESSAGES = 20
+
 def get_sharma_reply(scammer_message: str, conversation: list) -> str:
-    # Add scammer message
     conversation.append({
         "role": "user",
         "content": scammer_message
     })
 
-    # 🔥 ADD THIS BLOCK RIGHT HERE
-    MAX_MESSAGES = 20
     if len(conversation) > MAX_MESSAGES:
-        # keep system prompt + last 18 messages
         conversation[:] = [conversation[0]] + conversation[-18:]
- 
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=conversation,
-        temperature=0.9,
-        presence_penalty=0.6,
-        frequency_penalty=0.5
+        temperature=1.0,
+        presence_penalty=0.9,
+        frequency_penalty=0.7
     )
 
     reply = response.choices[0].message.content
 
-    # Save Mr. Sharma reply
     conversation.append({
         "role": "assistant",
         "content": reply
