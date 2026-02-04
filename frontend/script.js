@@ -1,5 +1,5 @@
-const chatBox = document.getElementById("chatBox");
-const input = document.getElementById("messageInput");
+const chatBox = document.getElementById("messages");
+const input = document.getElementById("user-input");
 
 // Create or reuse session id
 let sessionId = localStorage.getItem("session_id");
@@ -10,7 +10,7 @@ if (!sessionId) {
 
 function addMessage(text, className) {
     const div = document.createElement("div");
-    div.className = `message ${className}`;
+    div.className = `msg ${className}`;
     div.innerText = text;
     chatBox.appendChild(div);
     chatBox.scrollTop = chatBox.scrollHeight;
@@ -33,25 +33,17 @@ async function sendMessage() {
             })
         });
 
-        if (!res.ok) {
-            throw new Error(`Server error: ${res.status}`);
-        }
+        if (!res.ok) throw new Error("Backend error");
 
         const data = await res.json();
-
-        // Only backend reply — no fallback text
         addMessage(data.reply, "sharma");
 
     } catch (err) {
-        // Explicit error instead of fake Sharma reply
-        addMessage(
-            "[Error: backend not responding]",
-            "sharma"
-        );
+        addMessage("[Backend not responding]", "sharma");
         console.error(err);
     }
 }
 
-input.addEventListener("keydown", e => {
+function handleKey(e) {
     if (e.key === "Enter") sendMessage();
-});
+}
