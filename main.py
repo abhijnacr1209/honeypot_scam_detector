@@ -1,8 +1,12 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from ai_engine import get_sharma_reply, SYSTEM_PROMPT
+
 
 app = FastAPI()
+conversations={}
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,6 +34,30 @@ async def chat(request: Request):
     })
 
     return {"reply": reply}
+
+@app.post("/api/report")
+async def generate_report(request: Request):
+    data = await request.json()
+    session_id = data.get("session_id")
+
+    if not session_id or session_id not in conversations:
+        return JSONResponse(
+            {"report": "No conversation found for this session."}
+        )
+
+    convo = conversations[session_id]
+
+    report_lines = []
+    for msg in convo:
+        if msg["role"] == "user":
+            report_lines.append(f"Scammer: {msg['content']}")
+        elif msg["role"] == "assistant":
+            report_lines.append(f"Mr. Sharma: {msg['content']}")
+
+    report_text = "\n\n".join(report_lines)
+
+    return {"report": report_text}
+
 
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
