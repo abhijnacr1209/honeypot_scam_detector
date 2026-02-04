@@ -1,56 +1,43 @@
-const chatBox = document.getElementById("messages");
-const input = document.getElementById("user-input");
+function addMessage(text, sender) {
+    const chatBox = document.getElementById("chatBox");
+    const msgDiv = document.createElement("div");
 
-// Create or reuse session id
-let sessionId = localStorage.getItem("session_id");
-if (!sessionId) {
-    sessionId = crypto.randomUUID();
-    localStorage.setItem("session_id", sessionId);
-}
+    msgDiv.className = sender === "user" ? "user-message" : "bot-message";
+    msgDiv.innerText = text;
 
-function addMessage(text, className) {
-    const div = document.createElement("div");
-    div.className = `message ${className}`;
-    div.innerText = text;
-    chatBox.appendChild(div);
+    chatBox.appendChild(msgDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 async function sendMessage() {
+    const input = document.getElementById("messageInput");
     const message = input.value.trim();
     if (!message) return;
 
-    // Show scammer message
-    addMessage(message, "scammer");
+    // Show user message
+    addMessage(message, "user");
     input.value = "";
 
     try {
-        const res = await fetch("/api/chat", {
+        const response = await fetch("/api/chat", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                message: message,
-                session_id: sessionId
-            })
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ message: message })
         });
 
-        if (!res.ok) throw new Error("Backend error");
-
-        const data = await res.json();
-
-        if (data.reply && data.reply.trim() !== "") {
-            addMessage(data.reply, "sharma");
-        } else {
-            addMessage("[No reply from backend]", "sharma");
+        if (!response.ok) {
+            throw new Error("Server error");
         }
 
-    } catch (err) {
-        addMessage("[Backend not responding]", "sharma");
-        console.error(err);
+        const data = await response.json();
+
+        // Show Mr Sharma reply
+        addMessage(data.reply, "bot");
+
+    } catch (error) {
+        addMessage("[Backend not responding]", "bot");
+        console.error(error);
     }
 }
-
-// Press Enter to send
-input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") sendMessage();
-});

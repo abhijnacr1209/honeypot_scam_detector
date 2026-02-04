@@ -1,67 +1,109 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from ai_engine import get_sharma_reply, SYSTEM_PROMPT
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
-app.mount ("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
-@app.get("/")
-def root():
-    return {"message": "Honeypot scam detector is running"}
-    
-
-# Allow frontend (if hosted elsewhere)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change "*" to your domain in production
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Store conversations by session_id
-conversations = {}
+app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+
+# Simple in-memory conversation (per session)
+conversation = [
+    {
+        "role": "system",
+        "content": (
+            "You are Mr Sharma, a polite elderly Indian man. "
+            "You are chatting with a scammer. "
+            "Your goal is to sound natural, ask innocent questions, "
+            "never reveal personal or financial details, "
+            "and keep the conversation going realistically."
+        )
+    }
+]
 
 @app.post("/api/chat")
 async def chat(request: Request):
-    try:
-        data = await request.json()
-        message = data.get("message")
-        session_id = data.get("session_id")
+    data = await request.json()
+    user_message = data.get("message", "")
 
-        if not session_id:
-            return JSONResponse({"error": "session_id required"}, status_code=400)
-        if not message:
-            return JSONResponse({"error": "message required"}, status_code=400)
+    conversation.append({
+        "role": "user",
+        "content": user_message
+    })
 
-        # Create new conversation if first time
-        if session_id not in conversations:
-            conversations[session_id] = [
-                {"role": "system", "content": SYSTEM_PROMPT}
-            ]
+    # TEMP natural replies (no AI yet)
+    reply = generate_natural_reply(user_message)
 
-        conversation = conversations[session_id]
+    conversation.append({
+        "role": "assistant",
+        "content": reply
+    })
 
-        # Get Mr. Sharma's reply from AI engine
-        reply = get_sharma_reply(message, conversation)
+    return {"reply": reply}
 
-        # (Optional) you can also run your info extractor here
-        detected_info = {
-            "upi_ids": [], 
-            "bank_accounts": [], 
-            "links": [], 
-            "phone_numbers": []
-        }
 
-        return JSONResponse({
-            "reply": reply,
-            "detected_info": detected_info
-        })
+def generate_natural_reply(msg: str) -> str:
+    msg = msg.lower()
 
-    except Exception as e:
-        print("Error in /api/chat:", e)
-        return JSONResponse({"reply": "Sorry beta, backend error occurred."}, status_code=500)
 
-# Run with: uvicorn main:app --reload
+    # Accident / emergency scam
+    if any(word in msg for word in ["accident", "hospital", "not well", "emergency", "injured"]):
+        return (
+            "Oh my god… what happened? Which hospital is this? "
+            "I spoke to my son this morning, he was fine. Please explain properly."
+        )
+
+    # Family relation scare
+    if any(word in msg for word in ["son", "daughter", "wife", "brother"]):
+        return (
+            "You are saying about my family? This is very shocking for me. "
+            "How did you get my number? Please tell me clearly what has happened."
+        )
+
+    # Money pressure
+    if any(word in msg for word in ["send money", "send amount", "transfer", "payment", "pay now"]):
+        return (
+            "Sir, I am an old man, I don’t understand these things quickly. "
+            "Why money is needed immediately? Can you please explain slowly?"
+        )
+
+    # Asking for bank details
+    if any(word in msg for word in ["account number", "ifsc", "bank details"]):
+        return (
+            "I am not comfortable sharing bank details on phone. "
+            "My bank manager told me never to share such information. "
+            "Is there any other way?"
+        )
+
+    # Asking for UPI
+    if "upi" in msg:
+        return (
+            "I have heard many frauds are happening through UPI. "
+            "Is this really safe? Can you confirm from your office?"
+        )
+
+    # OTP scam
+    if "otp" in msg:
+        return (
+            "I just received an OTP message. "
+            "Why is OTP required now? Earlier nobody asked like this."
+        )
+
+    # Threat / urgency
+    if any(word in msg for word in ["urgent", "immediately", "now", "last warning"]):
+        return (
+            "Please don’t shout at me. I am trying to understand. "
+            "Give me some time, my hands are shaking."
+        )
+
+    # Default fallback
+    return (
+        "I am getting confused. Please explain once again slowly. "
+        "I am not very educated in these matters."
+    )
