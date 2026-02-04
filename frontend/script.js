@@ -22,7 +22,7 @@ async function sendMessage() {
     input.value = "";
 
     try {
-        const response = await fetch("/api/chat", {
+        const response = await fetch("https://127.0.0.1:8000/api/chat", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

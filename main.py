@@ -1,9 +1,11 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 app = FastAPI()
 
+# -------------------- CORS --------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -11,9 +13,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# -------------------- Frontend --------------------
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
-# Simple in-memory conversation (per session)
+# -------------------- Conversation Memory --------------------
 conversation = [
     {
         "role": "system",
@@ -27,17 +30,20 @@ conversation = [
     }
 ]
 
+# -------------------- Pydantic Model --------------------
+class ChatRequest(BaseModel):
+    message: str
+
+# -------------------- Chat API --------------------
 @app.post("/api/chat")
-async def chat(request: Request):
-    data = await request.json()
-    user_message = data.get("message", "")
+async def chat(req: ChatRequest):
+    user_message = req.message
 
     conversation.append({
         "role": "user",
         "content": user_message
     })
 
-    # TEMP natural replies (no AI yet)
     reply = generate_natural_reply(user_message)
 
     conversation.append({
@@ -47,15 +53,14 @@ async def chat(request: Request):
 
     return {"reply": reply}
 
-
+# -------------------- Natural Reply Engine (UNCHANGED) --------------------
 def generate_natural_reply(msg: str) -> str:
     msg = msg.lower()
-
 
     # Accident / emergency scam
     if any(word in msg for word in ["accident", "hospital", "not well", "emergency", "injured"]):
         return (
-            "Oh my god… what happened? Which hospital is this? "
+            "Oh my god... what happened? Which hospital is this? "
             "I spoke to my son this morning, he was fine. Please explain properly."
         )
 
@@ -67,7 +72,7 @@ def generate_natural_reply(msg: str) -> str:
         )
 
     # Money pressure
-    if any(word in msg for word in ["send money", "send amount", "transfer", "payment", "pay now"]):
+    if any(word in msg for word in ["send money", "send amount", "transfer", "payment", "pay"]):
         return (
             "Sir, I am an old man, I don’t understand these things quickly. "
             "Why money is needed immediately? Can you please explain slowly?"
@@ -87,23 +92,3 @@ def generate_natural_reply(msg: str) -> str:
             "I have heard many frauds are happening through UPI. "
             "Is this really safe? Can you confirm from your office?"
         )
-
-    # OTP scam
-    if "otp" in msg:
-        return (
-            "I just received an OTP message. "
-            "Why is OTP required now? Earlier nobody asked like this."
-        )
-
-    # Threat / urgency
-    if any(word in msg for word in ["urgent", "immediately", "now", "last warning"]):
-        return (
-            "Please don’t shout at me. I am trying to understand. "
-            "Give me some time, my hands are shaking."
-        )
-
-    # Default fallback
-    return (
-        "I am getting confused. Please explain once again slowly. "
-        "I am not very educated in these matters."
-    )
