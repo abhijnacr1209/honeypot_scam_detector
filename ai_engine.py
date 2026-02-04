@@ -22,27 +22,31 @@ Behavior:
 MAX_MESSAGES = 20
 
 def get_sharma_reply(scammer_message: str, conversation: list) -> str:
-    conversation.append({
-        "role": "user",
-        "content": scammer_message
-    })
+    try:
+        conversation.append({"role": "user", "content": scammer_message})
+        if len(conversation) > MAX_MESSAGES:
+            conversation[:] = [conversation[0]] + conversation[-18:]
 
-    if len(conversation) > MAX_MESSAGES:
-        conversation[:] = [conversation[0]] + conversation[-18:]
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=conversation,
+            temperature=1.0,
+            presence_penalty=0.9,
+            frequency_penalty=0.7
+            )
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=conversation,
-        temperature=1.0,
-        presence_penalty=0.9,
-        frequency_penalty=0.7
-    )
+        reply = response.choices[0].message.content
 
-    reply = response.choices[0].message.content
-
-    conversation.append({
+        conversation.append({
         "role": "assistant",
         "content": reply
     })
 
-    return reply
+        return reply
+
+    except Exception as e:
+        print("Error in get_sharma_reply:", e)
+        return "Sorry beta, I am having trouble understanding. Please say again."
+
+
+    

@@ -15,21 +15,24 @@ conversations = {}
 @app.post("/api/chat")
 async def chat(request: Request):
     data = await request.json()
-
     scammer_message = data.get("message")
     session_id = data.get("session_id")
 
-    if not scammer_message:
-        return JSONResponse(
-            {"error": "message required"},
-            status_code=400
-        )
-
     if not session_id:
-        return JSONResponse(
-            {"error": "session_id required"},
-            status_code=400
-        )
+        return JSONResponse({"error": "session_id required"}, status_code=400)
+
+    # conversations is a global dictionary storing sessions
+    if session_id not in conversations:
+        conversations[session_id] = [
+            {"role": "system", "content": SYSTEM_PROMPT}
+        ]
+
+    conversation = conversations[session_id]
+
+    reply = get_sharma_reply(scammer_message, conversation)
+
+    return JSONResponse({"reply": reply})
+
 
     # Create new conversation
     if session_id not in conversations:

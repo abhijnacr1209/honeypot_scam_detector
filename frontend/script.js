@@ -36,14 +36,16 @@ async function sendMessage() {
         if (!res.ok) throw new Error("Backend error");
 
         const data = await res.json();
-        addMessage(data.reply, "sharma");
+        console.log("Backend reply data:", data); // DEBUG
+
+        if (data.reply && data.reply.trim() !== "") {
+            addMessage(data.reply, "sharma");
+        } else {
+            addMessage("[No reply from backend]", "sharma");
+        }
 
     } catch (err) {
         addMessage("[Backend not responding]", "sharma");
         console.error(err);
     }
-}
-
-function handleKey(e) {
-    if (e.key === "Enter") sendMessage();
 }
