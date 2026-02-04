@@ -10,8 +10,11 @@ def get_sharma_reply(scammer_message: str, conversation: list) -> str:
     })
 
     # 🔥 ADD THIS BLOCK RIGHT HERE
-    if len(conversation) > 20:
-        conversation[:] = conversation[:1]  # keep only system prompt
+    MAX_MESSAGES = 20
+    if len(conversation) > MAX_MESSAGES:
+        # keep system prompt + last 18 messages
+        conversation[:] = [conversation[0]] + conversation[-18:]
+ 
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",

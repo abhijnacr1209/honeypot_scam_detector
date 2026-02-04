@@ -1,4 +1,8 @@
 from ai_engine import get_sharma_reply
+from uuid import uuid4
+
+conversations = {}
+
 
 SYSTEM_PROMPT = """
 You are Mr. Sharma, a 62-year-old retired Indian man.

@@ -1,20 +1,44 @@
-import os
 from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
-from ai_engine import get_sharma_reply
+from fastapi.staticfiles import StaticFiles
+
+from ai_engine import get_sharma_reply, SYSTEM_PROMPT
 
 app = FastAPI()
 
 # Serve frontend
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
-# API endpoint used by frontend
+# In-memory conversation store
+conversations = {}
+
 @app.post("/api/chat")
 async def chat(request: Request):
     data = await request.json()
-    scammer_message = data.get("message")
 
-    reply = get_sharma_reply(scammer_message)
+    scammer_message = data.get("message")
+    session_id = data.get("session_id")
+
+    if not scammer_message:
+        return JSONResponse(
+            {"error": "message required"},
+            status_code=400
+        )
+
+    if not session_id:
+        return JSONResponse(
+            {"error": "session_id required"},
+            status_code=400
+        )
+
+    # Create conversation if new session
+    if session_id not in conversations:
+        conversations[session_id] = [
+            {"role": "system", "content": SYSTEM_PROMPT}
+        ]
+
+    conversation = conversations[session_id]
+
+    reply = get_sharma_reply(scammer_message, conversation)
 
     return JSONResponse({"reply": reply})

@@ -1,6 +1,13 @@
 const chatBox = document.getElementById("chatBox");
 const input = document.getElementById("messageInput");
 
+// Create or reuse session id
+let sessionId = localStorage.getItem("session_id");
+if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem("session_id", sessionId);
+}
+
 function addMessage(text, className) {
     const div = document.createElement("div");
     div.className = `message ${className}`;
@@ -16,10 +23,13 @@ async function sendMessage() {
     addMessage(message, "scammer");
     input.value = "";
 
-    const res = await fetch("http://127.0.0.1:8000/chat", {
+    const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({
+            message: message,
+            session_id: sessionId
+        })
     });
 
     const data = await res.json();
