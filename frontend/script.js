@@ -7,6 +7,7 @@ if (!sessionId) {
     localStorage.setItem("session_id", sessionId);
 }
 
+
 // DOM references (CRITICAL)
 document.addEventListener("DOMContentLoaded", () => {
     const sendBtn = document.getElementById("send-btn");
@@ -66,4 +67,32 @@ function appendBubble(text, sender) {
     bubble.innerText = text;
     chatWindow.appendChild(bubble);
     chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+async function generateReport() {
+    const modal = document.getElementById("report-modal");
+    const overlay = document.getElementById("overlay");
+    const content = document.getElementById("report-content");
+
+    modal.style.display = "block";
+    overlay.style.display = "block";
+    content.innerText = "Generating report... Please wait.";
+
+    try {
+        // Send session_id, NOT chatHistory
+        const res = await fetch("/api/report", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                session_id: sessionId   // <-- important
+            })
+        });
+
+        const data = await res.json();
+        content.innerText = data.report || "No report available.";
+
+    } catch (err) {
+        content.innerText = "Error generating report.";
+        console.error(err);
+    }
 }

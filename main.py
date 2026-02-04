@@ -89,7 +89,7 @@ def generate_natural_reply(msg: str) -> str:
         )
 
     # Family relation scare
-    if any(word in msg for word in ["son", "daughter", "wife", "brother"]):
+    if any(word in msg for word in ["son", "daughter", "wife", "brother","sister","family member"]):
         return (
             "You are saying about my family? This is very shocking for me. "
             "How did you get my number? Please tell me clearly what has happened."
